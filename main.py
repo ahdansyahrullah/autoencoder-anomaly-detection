@@ -7,23 +7,29 @@ import keras
 
 BASE_DIR = Path(__file__).resolve().parent
 
+MODEL_PATH = BASE_DIR / "autoencoder_clean.keras"
+SCALER_PATH = BASE_DIR / "scaler.pkl"
+THRESHOLD_PATH = BASE_DIR / "threshold.pkl"
+
 @st.cache_resource
 def load_assets():
     model = keras.saving.load_model(
-        BASE_DIR / "autoencoder_clean.keras",
+        MODEL_PATH,
         compile=False,
         safe_mode=False
     )
-    scaler = joblib.load(BASE_DIR / "scaler.pkl")
-    threshold = joblib.load(BASE_DIR / "threshold.pkl")
+    scaler = joblib.load(SCALER_PATH)
+    threshold = joblib.load(THRESHOLD_PATH)
     return model, scaler, threshold
 
-model, scaler, threshold = load_assets()
+try:
+    model, scaler, threshold = load_assets()
 except Exception as e:
     st.error("Gagal load model / scaler / threshold.")
     st.exception(e)
     st.stop()
 
+n_features = scaler.n_features_in_
 # ===== INFO FITUR =====
 n_features = scaler.n_features_in_
 
