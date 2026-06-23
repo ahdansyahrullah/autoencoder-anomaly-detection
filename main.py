@@ -3,40 +3,22 @@ import numpy as np
 import joblib
 import pandas as pd
 from pathlib import Path
-import tensorflow as tf
+import keras
 
-# ===== PATH DASAR PROJECT =====
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = BASE_DIR / "autoencoder_clean.keras"
-SCALER_PATH = BASE_DIR / "scaler.pkl"
-THRESHOLD_PATH = BASE_DIR / "threshold.pkl"
-
-# ===== LOAD MODEL =====
 @st.cache_resource
 def load_assets():
-    if not MODEL_PATH.exists():
-        raise FileNotFoundError(f"Model tidak ditemukan: {MODEL_PATH}")
-
-    if not SCALER_PATH.exists():
-        raise FileNotFoundError(f"Scaler tidak ditemukan: {SCALER_PATH}")
-
-    if not THRESHOLD_PATH.exists():
-        raise FileNotFoundError(f"Threshold tidak ditemukan: {THRESHOLD_PATH}")
-
-    model = tf.keras.models.load_model(
-        MODEL_PATH,
+    model = keras.saving.load_model(
+        BASE_DIR / "autoencoder_clean.keras",
         compile=False,
         safe_mode=False
     )
-
-    scaler = joblib.load(SCALER_PATH)
-    threshold = joblib.load(THRESHOLD_PATH)
-
+    scaler = joblib.load(BASE_DIR / "scaler.pkl")
+    threshold = joblib.load(BASE_DIR / "threshold.pkl")
     return model, scaler, threshold
 
-try:
-    model, scaler, threshold = load_assets()
+model, scaler, threshold = load_assets()
 except Exception as e:
     st.error("Gagal load model / scaler / threshold.")
     st.exception(e)
