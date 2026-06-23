@@ -1,6 +1,7 @@
 streamlit
-pandas
+tensorflow==2.21.0
 numpy
-matplotlib
+pandas
 scikit-learn
-pillow
+matplotlib
+joblib
