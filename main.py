@@ -2,17 +2,45 @@ import streamlit as st
 import numpy as np
 import joblib
 import pandas as pd
-from tensorflow.keras.models import load_model
+from pathlib import Path
+import tensorflow as tf
 
-# ===== LOAD MODEL (pakai cache biar ringan) =====
+# ===== PATH DASAR PROJECT =====
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "autoencoder_clean.keras"
+SCALER_PATH = BASE_DIR / "scaler.pkl"
+THRESHOLD_PATH = BASE_DIR / "threshold.pkl"
+
+# ===== LOAD MODEL =====
 @st.cache_resource
 def load_assets():
-    model = load_model("autoencoder_clean.keras", compile=False, safe_mode=False)
-    scaler = joblib.load("scaler.pkl")
-    threshold = joblib.load("threshold.pkl")
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Model tidak ditemukan: {MODEL_PATH}")
+
+    if not SCALER_PATH.exists():
+        raise FileNotFoundError(f"Scaler tidak ditemukan: {SCALER_PATH}")
+
+    if not THRESHOLD_PATH.exists():
+        raise FileNotFoundError(f"Threshold tidak ditemukan: {THRESHOLD_PATH}")
+
+    model = tf.keras.models.load_model(
+        MODEL_PATH,
+        compile=False,
+        safe_mode=False
+    )
+
+    scaler = joblib.load(SCALER_PATH)
+    threshold = joblib.load(THRESHOLD_PATH)
+
     return model, scaler, threshold
 
-model, scaler, threshold = load_assets()
+try:
+    model, scaler, threshold = load_assets()
+except Exception as e:
+    st.error("Gagal load model / scaler / threshold.")
+    st.exception(e)
+    st.stop()
 
 # ===== INFO FITUR =====
 n_features = scaler.n_features_in_
@@ -22,11 +50,11 @@ st.title("🚀 Anomaly Detection (Autoencoder)")
 st.write(f"Jumlah fitur harus: {n_features}")
 
 # ==============================
-# 🔹 INPUT MANUAL
+# INPUT MANUAL
 # ==============================
 st.subheader("Input Manual")
 
-input_data = st.text_input(f"Masukkan {n_features} angka (pisahkan koma)")
+input_data = st.text_input(f"Masukkan {n_features} angka, pisahkan dengan koma")
 
 if st.button("Predict Manual"):
     try:
@@ -52,7 +80,7 @@ if st.button("Predict Manual"):
         st.warning(f"Error: {e}")
 
 # ==============================
-# 🔹 UPLOAD CSV
+# UPLOAD CSV
 # ==============================
 st.subheader("Upload CSV")
 
@@ -72,8 +100,8 @@ if uploaded_file:
 
             pred = (mse > threshold).astype(int)
 
-            df['Prediction'] = pred
-            df['MSE'] = mse
+            df["Prediction"] = pred
+            df["MSE"] = mse
 
             st.write(df)
             st.success("✅ Prediksi selesai")
