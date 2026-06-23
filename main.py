@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 # ===== LOAD MODEL (pakai cache biar ringan) =====
 @st.cache_resource
 def load_assets():
-    model = load_model("autoencoder_clean.h5", compile=False)
+    model = load_model("autoencoder_clean.keras", compile=False)
     scaler = joblib.load("scaler.pkl")
     threshold = joblib.load("threshold.pkl")
     return model, scaler, threshold
