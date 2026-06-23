@@ -1,8 +1,8 @@
 streamlit
-tensorflow
-numpy
+tensorflow==2.21.0
 pandas
+numpy
 scikit-learn
 matplotlib
+h5py
 joblib
-
