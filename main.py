@@ -1,3 +1,6 @@
+import os
+os.environ["KERAS_BACKEND"] = "tensorflow"
+
 import streamlit as st
 import numpy as np
 import joblib
@@ -7,20 +10,40 @@ import keras
 
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = BASE_DIR / "autoencoder_clean.keras"
+WEIGHTS_PATH = BASE_DIR / "autoencoder_clean.weights.h5"
 SCALER_PATH = BASE_DIR / "scaler.pkl"
 THRESHOLD_PATH = BASE_DIR / "threshold.pkl"
 
+
+def build_autoencoder(input_dim=78):
+    inputs = keras.Input(shape=(input_dim,), name="input_layer")
+
+    x = keras.layers.Dense(64, activation="relu", name="dense")(inputs)
+    x = keras.layers.Dense(32, activation="relu", name="dense_1")(x)
+    x = keras.layers.Dense(16, activation="relu", name="dense_2")(x)
+    x = keras.layers.Dense(32, activation="relu", name="dense_3")(x)
+    x = keras.layers.Dense(64, activation="relu", name="dense_4")(x)
+
+    outputs = keras.layers.Dense(input_dim, activation="sigmoid", name="dense_5")(x)
+
+    model = keras.Model(inputs, outputs, name="functional")
+    return model
+
+
 @st.cache_resource
 def load_assets():
-    model = keras.saving.load_model(
-        MODEL_PATH,
-        compile=False,
-        safe_mode=False
-    )
     scaler = joblib.load(SCALER_PATH)
-    threshold = joblib.load(THRESHOLD_PATH)
+
+    threshold_raw = joblib.load(THRESHOLD_PATH)
+    threshold = float(np.asarray(threshold_raw).ravel()[0])
+
+    input_dim = scaler.n_features_in_
+
+    model = build_autoencoder(input_dim)
+    model.load_weights(str(WEIGHTS_PATH))
+
     return model, scaler, threshold
+
 
 try:
     model, scaler, threshold = load_assets()
@@ -29,11 +52,9 @@ except Exception as e:
     st.exception(e)
     st.stop()
 
-n_features = scaler.n_features_in_
-# ===== INFO FITUR =====
+
 n_features = scaler.n_features_in_
 
-# ===== UI =====
 st.title("🚀 Anomaly Detection (Autoencoder)")
 st.write(f"Jumlah fitur harus: {n_features}")
 
@@ -55,7 +76,7 @@ if st.button("Predict Manual"):
             data_scaled = scaler.transform(data)
 
             recon = model.predict(data_scaled)
-            mse = np.mean((data_scaled - recon) ** 2)
+            mse = float(np.mean((data_scaled - recon) ** 2))
 
             pred = int(mse > threshold)
 
@@ -66,6 +87,7 @@ if st.button("Predict Manual"):
 
     except Exception as e:
         st.warning(f"Error: {e}")
+
 
 # ==============================
 # UPLOAD CSV
